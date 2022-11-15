@@ -5,8 +5,9 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
+import { RoomService } from '../modules/room/room.service';
 
 interface ConnectRoomMsg {
   roomId: string;
@@ -22,8 +23,12 @@ interface Message {
     origin: '*',
   },
 })
+@Injectable()
 export class EventsGateway implements OnGatewayInit, OnGatewayDisconnect {
   private logger: Logger = new Logger('Events Gateway');
+
+  constructor(private roomService: RoomService) {}
+
   @WebSocketServer() wss: Server;
 
   afterInit(server: any): void {
@@ -62,6 +67,19 @@ export class EventsGateway implements OnGatewayInit, OnGatewayDisconnect {
     this.wss.to(msg.roomId).emit('pauseVideo', {
       currentTimePlayed: msg.currentTimePlayed,
     });
+  }
+
+  @SubscribeMessage('changeVideo')
+  async handleChangeVideo(client: Socket, msg: any) {
+    try {
+      await this.roomService.changeVideo({
+        roomId: msg.roomId,
+        videoLink: msg.videoLink,
+      });
+      this.wss.in(msg.roomId).emit('changeVideo', { videoLink: msg.videoLink });
+    } catch (e) {
+      console.log(e.message);
+    }
   }
 
   @SubscribeMessage('playVideo')

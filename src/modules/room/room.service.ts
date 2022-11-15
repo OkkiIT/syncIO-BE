@@ -37,4 +37,12 @@ export class RoomService {
   private generateUserName() {
     return userNames[Math.floor(Math.random() * userNames.length)];
   }
+
+  async changeVideo({ roomId, videoLink }) {
+    const updatedRoom = await this.roomModel.findOneAndUpdate(
+      { key: roomId },
+      { currentVideoLink: videoLink },
+    );
+    if (!updatedRoom) throw new Error('Something went wrong');
+  }
 }

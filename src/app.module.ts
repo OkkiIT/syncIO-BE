@@ -3,12 +3,12 @@ import { AppController } from './app.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { RoomModule } from './modules/room/room.module';
 import { AppService } from './app.service';
-import { EventsGateway } from './events/events.gateway';
+import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
-    EventsGateway,
     RoomModule,
+    EventsModule,
     MongooseModule.forRoot('mongodb://localhost/sync-vids'),
   ],
   controllers: [AppController],
