@@ -4,12 +4,14 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Room } from './room.schema';
 import { Request, Response } from 'express';
 import { userNames } from '../../mocks/userNames';
+import { HttpService } from '@nestjs/axios';
 
 @Injectable()
 export class RoomService {
   constructor(
     @InjectModel('Room')
     private readonly roomModel: Model<Room>,
+    private readonly httpService: HttpService,
   ) {}
 
   async findRoom({ query, req, res }) {
@@ -44,5 +46,52 @@ export class RoomService {
       { currentVideoLink: videoLink },
     );
     if (!updatedRoom) throw new Error('Something went wrong');
+  }
+
+  async addVideoToPlaylist(roomId: string, videoLink: string) {
+    const videoIdRegExp = /v=([\s\S]+?)&/;
+    const videoId = videoLink.match(videoIdRegExp)[1];
+    const videoPreviewImgLink = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+    const room = await this.roomModel.findOne({ key: roomId });
+    const {
+      data: { title: videoTitle, author_name: channelName },
+    } = await this.httpService.axiosRef.get(
+      `https://noembed.com/embed?dataType=json&url=${videoLink}`,
+    );
+    const { data } = await this.httpService.axiosRef.get(
+      `https://noembed.com/embed?dataType=json&url=${videoLink}`,
+    );
+    console.log(data);
+    room.playList.push({
+      videoLink,
+      imgSrc: videoPreviewImgLink,
+      key: videoId,
+      title: videoTitle,
+      channelName,
+    });
+    await room.save();
+    console.log(room.playList[room.playList.length - 1]);
+    return room.playList;
+  }
+
+  async getPlaylist(roomId: string) {
+    const room = await this.roomModel.findOne({ key: roomId });
+    return room.playList;
+  }
+
+  async playVideoFromPlaylist(roomId: string, videoId: string) {
+    const room = await this.roomModel.findOne({ key: roomId });
+    const video = room.playList.find((item) => item.key === videoId);
+    room.currentVideoLink = video.videoLink;
+    room.playList = room.playList.filter((item) => item.key !== videoId);
+    await room.save();
+    return room;
+  }
+
+  async deleteVideoFromPlaylist(roomId: string, videoId: string) {
+    const room = await this.roomModel.findOne({ key: roomId });
+    room.playList = room.playList.filter((item) => item.key !== videoId);
+    await room.save();
+    return room.playList;
   }
 }

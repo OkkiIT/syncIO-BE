@@ -90,4 +90,43 @@ export class EventsGateway implements OnGatewayInit, OnGatewayDisconnect {
   handleDisconnect(client: any): any {
     this.wss.emit('pauseVideo');
   }
+
+  @SubscribeMessage('getPlaylist')
+  async handleGetPlaylist(client: Socket, msg: any) {
+    const playlist = await this.roomService.getPlaylist(msg.roomId);
+    this.wss.to(msg.roomId).emit('getPlaylist', { playlist });
+  }
+
+  @SubscribeMessage('addVideoToPlaylist')
+  async handleAddVideoToPlaylist(client: Socket, msg: any) {
+    const updatedPlaylist = await this.roomService.addVideoToPlaylist(
+      msg.roomId,
+      msg.videoLink,
+    );
+
+    this.wss
+      .in(msg.roomId)
+      .emit('addVideoToPlaylist', { playlist: updatedPlaylist });
+  }
+
+  @SubscribeMessage('playVideoFromPlaylist')
+  async handlePlayVideoFromPlaylist(client: Socket, msg: any) {
+    const room = await this.roomService.playVideoFromPlaylist(
+      msg.roomId,
+      msg.videoId,
+    );
+
+    this.wss.in(msg.roomId).emit('playVideoFromPlaylist', { room });
+  }
+
+  @SubscribeMessage('deleteVideoFromPlaylist')
+  async handleDeleteVideoFromPlaylist(client: Socket, msg: any) {
+    const updatedPlaylist = this.roomService.deleteVideoFromPlaylist(
+      msg.roomId,
+      msg.videoId,
+    );
+    this.wss
+      .in(msg.roomId)
+      .emit('deleteVideoFromPlaylist', { playlist: updatedPlaylist });
+  }
 }
