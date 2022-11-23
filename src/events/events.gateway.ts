@@ -121,7 +121,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayDisconnect {
 
   @SubscribeMessage('deleteVideoFromPlaylist')
   async handleDeleteVideoFromPlaylist(client: Socket, msg: any) {
-    const updatedPlaylist = this.roomService.deleteVideoFromPlaylist(
+    const updatedPlaylist = await this.roomService.deleteVideoFromPlaylist(
       msg.roomId,
       msg.videoId,
     );
